@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OJT Hours Tracker - Calendar</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>OJT Hours Tracker</h1>
+        
+        <!-- Settings & Progress -->
+        <div class="progress-section">
+            <div class="settings">
+                <label>Required Total Hours: 
+                    <input type="number" id="requiredHours" placeholder="e.g. 240" min="1">
+                </label>
+
+                <button id="saveSettings" class="btn btn-save-settings">Save Settings</button>
+            </div>
+            <div class="progress-container">
+                <div class="progress-label">
+                    <span id="progressText">0% - 0h / 0h required</span>
+                </div>
+
+                <div class="progress-bar">
+                    <div id="progressFill" class="progress-fill"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="calendar-header">
+            <button id="prevMonth" class="nav-btn"><</button>
+            <h2 id="monthYear"></h2>
+            <button id="nextMonth" class="nav-btn">></button>
+            <button id="todayBtn" class="today-btn">Today</button>
+        </div>
+
+        <div class="calendar-controls">
+            <div class="legend">
+                <span class="legend-item absent">Absent (0h)</span>
+                <span class="legend-item present">Present</span>
+                <span class="legend-item today">Today</span>
+            </div>
+            <div class="stats">
+                <span>Month Total: <strong id="totalHours">0h 0m</strong></span>
+                <span>Est. Days Left: <strong id="estimatedDaysLeft">0</strong></span>
+                <span>Avg: <strong id="avgHours">0h 0m</strong></span>
+            </div>
+        </div>
+
+        <div class="calendar" id="calendar"></div>
+
+        <div class="actions">
+            <button id="exportBtn" class="btn btn-export">Export CSV</button>
+            <button id="clearMonthBtn" class="btn btn-clear">Clear Month</button>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <h3 id="modalDate"></h3>
+            <label>Status:
+                <select id="statusSelect">
+                    <option value="work" selected>Regular Work</option>
+                    <option value="holiday">Holiday</option>
+                    <option value="no-schedule">No Schedule</option>
+                </select>
+            </label>
+
+            <label>Hours Worked:
+                <select id="hoursSelect">
+                    <option value="0">Absent (0h)</option>
+                    <option value="1">1h</option>
+                    <option value="2">2h</option>
+                    <option value="3">3h</option>
+                    <option value="4">4h</option>
+                    <option value="5">5h</option>
+                    <option value="6">6h</option>
+                    <option value="7">7h</option>
+                    <option value="8" selected>8h</option>
+                    <option value="9">9h</option>
+                    <option value="10">10h</option>
+                    <option value="11">11h</option>
+                    <option value="12">12h</option>
+                </select>
+            </label>
+
+            <label>Minutes Worked:
+                <select id="minutesSelect">
+                    <option value="0" selected>00m</option>
+                    <option value="15">15m</option>
+                    <option value="30">30m</option>
+                    <option value="45">45m</option>
+                </select>
+            </label>
+
+            <div class="modal-actions">
+                <button id="saveHours" class="btn btn-save">Save</button>
+                <button id="cancelBtn" class="btn btn-cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
