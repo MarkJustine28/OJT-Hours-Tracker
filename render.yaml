@@ -1,0 +1,30 @@
+# Render Web Service Configuration
+# Save as render.yaml in project root for one-click deployment
+
+services:
+  - type: web
+    name: ojt-hours-tracker-api
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /api/health
+    autoDeploy: true
+    
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+        
+      # Database Configuration - UPDATE THESE
+      - key: DB_HOST
+        value: your-database-host
+      - key: DB_PORT
+        value: 3306
+      - key: DB_USER
+        value: your-db-user
+      - key: DB_PASSWORD
+        sync: false  # Don't sync to GitHub
+      - key: DB_NAME
+        value: ojt_hours_tracker

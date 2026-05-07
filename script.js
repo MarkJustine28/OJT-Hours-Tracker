@@ -1,3 +1,18 @@
+// ========================================
+// API Configuration - Update this when deployed
+// ========================================
+// Local development: 'http://localhost:3001'
+// Render production: 'https://ojt-hours-tracker-api.onrender.com'
+// Firebase Functions: 'https://us-central1-ojt-tracker-bf9ba.cloudfunctions.net'
+const API_BASE = (() => {
+    if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+        return 'http://localhost:3001';  // Local development
+    }
+    // For production, use Render or other deployment URL
+    // Change this to your Render URL once deployed
+    return 'https://ojt-hours-tracker-api.onrender.com';  // UPDATE THIS
+})();
+
 class CalendarOJTTracker {
     constructor() {
         this.currentDate = new Date();
@@ -55,8 +70,8 @@ class CalendarOJTTracker {
     async loadRemoteData() {
         try {
             const [settingsPayload, entriesPayload] = await Promise.all([
-                this.fetchJson('/api/settings'),
-                this.fetchJson('/api/entries')
+                this.fetchJson(`${API_BASE}/api/settings`),
+                this.fetchJson(`${API_BASE}/api/entries`)
             ]);
             this.settings.requiredHours = settingsPayload.requiredHours || 240;
             this.data = entriesPayload.data || {};
@@ -88,7 +103,7 @@ class CalendarOJTTracker {
     async saveSettingsFunc() {
         const requiredHours = parseInt(this.elements.requiredHours.value, 10) || 240;
         try {
-            const payload = await this.fetchJson('/api/settings', {
+            const payload = await this.fetchJson(`${API_BASE}/api/settings`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ requiredHours })
@@ -263,7 +278,7 @@ class CalendarOJTTracker {
         }
 
         try {
-            const payload = await this.fetchJson(`/api/entries/${this.selectedDay}`, {
+            const payload = await this.fetchJson(`${API_BASE}/api/entries/${this.selectedDay}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -412,7 +427,7 @@ class CalendarOJTTracker {
         const yearMonth = `${this.currentDate.getFullYear()}-${month}`;
 
         try {
-            await this.fetchJson(`/api/entries/month/${yearMonth}`, {
+            await this.fetchJson(`${API_BASE}/api/entries/month/${yearMonth}`, {
                 method: 'DELETE'
             });
 

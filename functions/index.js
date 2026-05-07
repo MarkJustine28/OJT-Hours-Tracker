@@ -1,30 +1,34 @@
-const fs = require('fs');
-const path = require('path');
-const dotenv = require('dotenv');
-const mysql = require('mysql2/promise');
+const functions = require('firebase-functions');
 const express = require('express');
 const cors = require('cors');
+const mysql = require('mysql2/promise');
+const path = require('path');
 
-const envPath = path.join(__dirname, '.env');
-const envExamplePath = path.join(__dirname, '.env.example');
-
-if (fs.existsSync(envPath)) {
-  dotenv.config({ path: envPath });
-} else if (fs.existsSync(envExamplePath)) {
-  dotenv.config({ path: envExamplePath });
-  console.warn('Using .env.example because .env was not found.');
-}
-
-const pool = require('./db');
-const { initializeFirebase, getFirestore, getAuth, getDatabase } = require('./firebase-config');
+const { initializeFirebase, getFirestore } = require('./firebase-config');
 
 // Initialize Firebase
-const firebase = initializeFirebase();
+initializeFirebase();
 
+// Create Express app
 const app = express();
-const INITIAL_PORT = Number(process.env.PORT || 3000);
-const MAX_PORT_ATTEMPTS = 20;
 
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// MySQL Connection Pool
+const pool = mysql.createPool({
+  host: process.env.DB_HOST || 'localhost',
+  port: Number(process.env.DB_PORT || 3306),
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'ojt_hours_tracker',
+  waitForConnections: true,
+  connectionLimit: 5,
+  queueLimit: 0,
+});
+
+// Utility function for error handling
 function createErrorPayload(message, error) {
   const base = { message };
   if (process.env.NODE_ENV !== 'production' && error) {
@@ -41,54 +45,11 @@ function sendServerError(res, message, error) {
   return res.status(500).json(createErrorPayload(message, error));
 }
 
-async function initializeDatabase() {
-  const dbName = process.env.DB_NAME || 'ojt_hours_tracker';
-  if (!/^[a-zA-Z0-9_]+$/.test(dbName)) {
-    throw new Error('Invalid DB_NAME. Use letters, numbers, and underscores only.');
-  }
+// =====================
+// Health Check
+// =====================
 
-  const adminPool = mysql.createPool({
-    host: process.env.DB_HOST || 'localhost',
-    port: Number(process.env.DB_PORT || 3306),
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    waitForConnections: true,
-    connectionLimit: 3,
-    queueLimit: 0,
-  });
-
-  await adminPool.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
-  await adminPool.end();
-
-  await pool.query(
-    `CREATE TABLE IF NOT EXISTS settings (
-      id TINYINT PRIMARY KEY,
-      required_hours INT NOT NULL DEFAULT 240,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-    )`
-  );
-
-  await pool.query(
-    `INSERT INTO settings (id, required_hours)
-     VALUES (1, 240)
-     ON DUPLICATE KEY UPDATE required_hours = required_hours`
-  );
-
-  await pool.query(
-    `CREATE TABLE IF NOT EXISTS time_entries (
-      entry_date DATE PRIMARY KEY,
-      hours DECIMAL(5,2) NOT NULL DEFAULT 0,
-      status ENUM('work', 'holiday', 'no-schedule') NOT NULL DEFAULT 'work',
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-    )`
-  );
-}
-
-app.use(cors());
-app.use(express.json());
-app.use(express.static(path.join(__dirname)));
-
-app.get('/api/health', async (_req, res) => {
+app.get('/health', async (_req, res) => {
   try {
     await pool.query('SELECT 1');
     return res.json({ ok: true });
@@ -96,6 +57,10 @@ app.get('/api/health', async (_req, res) => {
     return res.status(500).json({ ok: false, ...createErrorPayload('Database connection failed', error) });
   }
 });
+
+// =====================
+// MySQL Endpoints
+// =====================
 
 app.get('/api/settings', async (_req, res) => {
   try {
@@ -174,11 +139,7 @@ app.put('/api/entries/:date', async (req, res) => {
       [date, hours, status]
     );
 
-    return res.json({
-      date,
-      hours,
-      status,
-    });
+    return res.json({ date, hours, status });
   } catch (error) {
     return sendServerError(res, 'Failed to save entry', error);
   }
@@ -208,16 +169,12 @@ app.delete('/api/entries/month/:month', async (req, res) => {
 // =====================
 
 app.get('/api/firebase/status', (_req, res) => {
-  if (firebase) {
-    return res.json({ 
-      status: 'connected',
-      projectId: firebase.app().options.projectId 
-    });
-  }
-  return res.status(503).json({ status: 'not-configured', message: 'Firebase not initialized' });
+  return res.json({ 
+    status: 'connected',
+    platform: 'firebase-functions'
+  });
 });
 
-// Get entries from Firestore (if Firebase is enabled)
 app.get('/api/firebase/entries', async (_req, res) => {
   try {
     const db = getFirestore();
@@ -242,7 +199,6 @@ app.get('/api/firebase/entries', async (_req, res) => {
   }
 });
 
-// Save entry to Firestore (if Firebase is enabled)
 app.put('/api/firebase/entries/:date', async (req, res) => {
   try {
     const db = getFirestore();
@@ -282,7 +238,6 @@ app.put('/api/firebase/entries/:date', async (req, res) => {
   }
 });
 
-// Get settings from Firestore (if Firebase is enabled)
 app.get('/api/firebase/settings', async (_req, res) => {
   try {
     const db = getFirestore();
@@ -305,7 +260,6 @@ app.get('/api/firebase/settings', async (_req, res) => {
   }
 });
 
-// Save settings to Firestore (if Firebase is enabled)
 app.put('/api/firebase/settings', async (req, res) => {
   try {
     const db = getFirestore();
@@ -333,30 +287,5 @@ app.put('/api/firebase/settings', async (req, res) => {
   }
 });
 
-function startServer(port, attempt = 0) {
-  const server = app.listen(port, () => {
-    const address = server.address();
-    const actualPort = typeof address === 'object' && address ? address.port : port;
-    console.log(`Server is running at http://localhost:${actualPort}`);
-  });
-
-  server.on('error', (error) => {
-    if (error.code === 'EADDRINUSE' && attempt < MAX_PORT_ATTEMPTS) {
-      const nextPort = port + 1;
-      console.warn(`Port ${port} is in use. Trying ${nextPort}...`);
-      return startServer(nextPort, attempt + 1);
-    }
-
-    console.error('Server failed to start:', error.message);
-    process.exit(1);
-  });
-
-  return server;
-}
-
-initializeDatabase()
-  .then(() => startServer(INITIAL_PORT))
-  .catch((error) => {
-    console.error('Database initialization failed:', error.message);
-    startServer(INITIAL_PORT);
-  });
+// Export as a Cloud Function
+exports.api = functions.https.onRequest(app);
