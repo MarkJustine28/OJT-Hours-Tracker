@@ -2,15 +2,14 @@
 // API Configuration - Update this when deployed
 // ========================================
 // Local development: 'http://localhost:3001'
-// Render production: 'https://ojt-hours-tracker-api.onrender.com'
+// Render production: 'https://ojt-hours-tracker-ylcm.onrender.com'
 // Firebase Functions: 'https://us-central1-ojt-tracker-bf9ba.cloudfunctions.net'
 const API_BASE = (() => {
     if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
         return 'http://localhost:3001';  // Local development
     }
     // For production, use Render or other deployment URL
-    // Change this to your Render URL once deployed
-    return 'https://ojt-hours-tracker-api.onrender.com';  // UPDATE THIS
+    return 'https://ojt-hours-tracker-ylcm.onrender.com';  // Render backend
 })();
 
 class CalendarOJTTracker {
