@@ -6,7 +6,6 @@ const { initializeFirebase, getFirestore } = require('./firebase-config');
 
 const DEFAULT_REQUIRED_HOURS = 240;
 const firebaseAdmin = initializeFirebase();
-const db = getFirestore();
 
 function createErrorPayload(message, error) {
   const base = { message };
@@ -28,6 +27,8 @@ function sendServerError(res, message, error) {
 }
 
 function getDbOrRespond(res) {
+  const db = getFirestore();
+
   if (!db) {
     res.status(503).json({ message: 'Firebase not configured' });
     return null;
@@ -56,18 +57,24 @@ function normalizeEntryData(data) {
 }
 
 async function initializeFirestoreDefaults() {
+  const db = getFirestore();
+
   if (!db) {
     return;
   }
 
-  const settingsRef = db.collection('settings').doc('global');
-  const snapshot = await settingsRef.get();
+  try {
+    const settingsRef = db.collection('settings').doc('global');
+    const snapshot = await settingsRef.get();
 
-  if (!snapshot.exists) {
-    await settingsRef.set({
-      requiredHours: DEFAULT_REQUIRED_HOURS,
-      updated_at: new Date().toISOString(),
-    });
+    if (!snapshot.exists) {
+      await settingsRef.set({
+        requiredHours: DEFAULT_REQUIRED_HOURS,
+        updated_at: new Date().toISOString(),
+      });
+    }
+  } catch (error) {
+    console.warn('Skipping Firestore default initialization:', error.message);
   }
 }
 
@@ -249,6 +256,8 @@ async function handleDeleteMonth(req, res) {
 }
 
 async function handleFirebaseStatus(_req, res) {
+  const db = getFirestore();
+
   if (!db) {
     return res.status(503).json({
       status: 'not-configured',
