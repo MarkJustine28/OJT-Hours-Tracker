@@ -1,6 +1,6 @@
 # Firebase Functions Deployment Guide
 
-Your Express backend is now ready to deploy to Firebase Cloud Functions!
+Your Express backend is now ready to deploy to Firebase Cloud Functions with Firestore.
 
 ## Prerequisites
 
@@ -10,26 +10,21 @@ Your Express backend is now ready to deploy to Firebase Cloud Functions!
 
 ## Environment Variables for Cloud Functions
 
-Firebase Functions reads environment variables from `.env.local` file in the `functions` directory:
+Firebase Functions can read environment variables from your deployment environment or a local `.env` file in the `functions` directory.
 
-### Create `functions/.env.local`
+### Recommended Firebase settings
 
 ```
-DB_HOST=your-database-host
-DB_PORT=3306
-DB_USER=your-db-user
-DB_PASSWORD=your-db-password
-DB_NAME=ojt_hours_tracker
+FIREBASE_SERVICE_ACCOUNT={"type":"service_account","project_id":"..."}
 NODE_ENV=production
 ```
 
-**Important:** Never commit `.env.local` with sensitive credentials to Git. Firebase will upload it securely during deployment.
+**Important:** Never commit service account JSON to Git.
 
-### For Database Access
+### Firestore access
 
-If your MySQL database is:
-- **Local/on-premises**: You'll need [Cloud SQL Proxy](https://cloud.google.com/sql/docs/mysql/sql-proxy) or migrate to Cloud SQL
-- **Cloud SQL**: Use `cloudsql` connection string instead of localhost
+- Enable Firestore in your Firebase project
+- Make sure the service account has Firestore permissions
 
 ## Deployment Steps
 

@@ -75,7 +75,7 @@ class CalendarOJTTracker {
             this.settings.requiredHours = settingsPayload.requiredHours || 240;
             this.data = entriesPayload.data || {};
         } catch (error) {
-            alert('Could not connect to backend. Start the Node.js server and check MySQL config.');
+            alert('Could not connect to backend. Check the Firebase service account and Firestore config.');
         }
     }
 

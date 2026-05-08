@@ -11,7 +11,7 @@
 Your backend is already ready. Just make sure:
 - `server.js` is your entry point ✓
 - `package.json` with all dependencies ✓
-- `.env` file with database credentials
+- `.env` file or Render environment variables with Firebase credentials
 
 ### 3. Create New Web Service on Render
 
@@ -30,18 +30,14 @@ In Render Dashboard → **Environment**:
 
 ```
 PORT=3000
-DB_HOST=your-database-host
-DB_PORT=3306
-DB_USER=your-database-user
-DB_PASSWORD=your-database-password
-DB_NAME=ojt_hours_tracker
+FIREBASE_SERVICE_ACCOUNT={"type":"service_account","project_id":"..."}
+# or: FIREBASE_KEY_PATH=/opt/render/project/src/service-account.json
 NODE_ENV=production
 ```
 
-**Database Options:**
-- **Local MySQL**: Use public IP if accessible
-- **Cloud SQL**: Use connection string
-- **Managed**: Use Render's integrated Postgres (optional migration)
+**Firebase Options:**
+- **Service account JSON**: Store it in a Render environment variable
+- **Key path**: Mount a JSON file and point `FIREBASE_KEY_PATH` to it
 
 ### 5. Deploy
 
@@ -73,7 +69,7 @@ const API_BASE = 'https://ojt-hours-tracker-api.onrender.com';
 ### Important Notes
 
 - **Free tier limitation**: Services spin down after 15 mins of inactivity (add 30 sec boot time)
-- **Database access**: Ensure your MySQL/database allows connections from Render IPs
+- **Firebase access**: Ensure the service account has Firestore permissions
 - **Auto-deploy**: Enable GitHub auto-deploy for continuous deployment
 
 ---
@@ -95,9 +91,9 @@ git push origin main
 ## Troubleshooting
 
 ### "Cannot connect to database"
-- Check firewall allows Render IPs
-- Verify DB_HOST, DB_USER, DB_PASSWORD in environment variables
-- For MySQL on local machine: consider Cloud SQL migration
+- Verify `FIREBASE_SERVICE_ACCOUNT` or `FIREBASE_KEY_PATH` is set
+- Confirm Firestore is enabled for the Firebase project
+- Make sure the service account has access to Firestore
 
 ### "Port already in use"
 - server.js already handles port conflicts, tries next port automatically

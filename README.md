@@ -1,18 +1,18 @@
 # OJT Hours Tracker
 
-Calendar-based OJT tracker with a Node.js + MySQL backend.
+Calendar-based OJT tracker with a Node.js + Firestore backend.
 
 ## Stack
 - Frontend: HTML, CSS, vanilla JavaScript
 - Backend: Node.js, Express
-- Database: MySQL
+- Database: Firestore
 
 ## Features
 - Log daily OJT hours and status (work, holiday, no-schedule)
 - Set required total hours
 - See monthly summary and progress bar
 - Export DTR CSV
-- Persist data in MySQL (no localStorage dependency)
+- Persist data in Firestore (no localStorage dependency)
 
 ## Setup
 
@@ -20,13 +20,12 @@ Calendar-based OJT tracker with a Node.js + MySQL backend.
 	npm install
 
 2. Create environment file
-	- Copy .env.example to .env
-	- Update DB credentials in .env
+	- Copy `.env.example` to `.env`
+	- Add `FIREBASE_SERVICE_ACCOUNT` or `FIREBASE_KEY_PATH`
 
-3. Create database schema
-	- Run sql/schema.sql in your MySQL server
-	- Example command:
-	  mysql -u root -p < sql/schema.sql
+3. Configure Firebase
+	- Make sure Firestore is enabled in your Firebase project
+	- Add the Firebase service account JSON to your Render environment or local `.env`
 
 4. Start server
 	npm run dev
