@@ -6,15 +6,8 @@ const express = require('express');
 const cors = require('cors');
 const admin = require('firebase-admin');
 
-const envPath = path.join(__dirname, '.env');
-const envExamplePath = path.join(__dirname, '.env.example');
-
-if (fs.existsSync(envPath)) {
-  dotenv.config({ path: envPath });
-} else if (fs.existsSync(envExamplePath)) {
-  dotenv.config({ path: envExamplePath });
-  console.warn('Using .env.example because .env was not found.');
-}
+// Load environment variables from the environment or a .env file
+dotenv.config();
 
 // =====================
 // Firebase Initialization
@@ -380,6 +373,19 @@ function startServer(port, attempt = 0) {
 initializeDatabase()
   .then(() => startServer(INITIAL_PORT))
   .catch((error) => {
-    console.error('Database initialization failed:', error.message);
+    console.error('Database initialization failed:');
+    console.error(error && error.stack ? error.stack : error);
+    try {
+      console.error('DB settings:', {
+        host: process.env.DB_HOST || 'undefined',
+        port: process.env.DB_PORT || 'undefined',
+        user: process.env.DB_USER || 'undefined',
+        database: process.env.DB_NAME || 'undefined',
+      });
+    } catch (e) {
+      // ignore
+    }
+
+    // Start server anyway so health endpoints return, but keep visible logs.
     startServer(INITIAL_PORT);
   });
