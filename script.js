@@ -12,8 +12,6 @@ const API_BASE = (() => {
     return 'https://ojt-hours-tracker-ylcm.onrender.com';  // Render backend
 })();
 
-const THEME_STORAGE_KEY = 'ojt-hours-tracker-theme';
-
 class CalendarOJTTracker {
     constructor() {
         this.currentDate = new Date();
@@ -22,7 +20,6 @@ class CalendarOJTTracker {
             requiredHours: 240,
         };
         this.selectedDay = null;
-        this.theme = this.loadThemePreference();
 
         this.elements = {
             calendar: document.getElementById('calendar'),
@@ -34,7 +31,6 @@ class CalendarOJTTracker {
             estimatedDaysLeft: document.getElementById('estimatedDaysLeft'),
             avgHours: document.getElementById('avgHours'),
             exportBtn: document.getElementById('exportBtn'),
-            themeToggle: document.getElementById('themeToggle'),
             clearMonthBtn: document.getElementById('clearMonthBtn'),
             editModal: document.getElementById('editModal'),
             modalDate: document.getElementById('modalDate'),
@@ -55,7 +51,6 @@ class CalendarOJTTracker {
     }
 
     async init() {
-        this.applyTheme();
         await this.loadRemoteData();
         this.elements.requiredHours.value = this.settings.requiredHours;
         this.renderCalendar();
@@ -85,32 +80,10 @@ class CalendarOJTTracker {
         }
     }
 
-    loadThemePreference() {
-        if (typeof window === 'undefined') {
-            return 'light';
-        }
-
-        return window.localStorage.getItem(THEME_STORAGE_KEY) || 'light';
-    }
-
-    applyTheme() {
-        document.documentElement.dataset.theme = this.theme;
-        if (this.elements.themeToggle) {
-            this.elements.themeToggle.textContent = this.theme === 'dark' ? 'Light' : 'Dark';
-        }
-    }
-
-    toggleTheme() {
-        this.theme = this.theme === 'dark' ? 'light' : 'dark';
-        window.localStorage.setItem(THEME_STORAGE_KEY, this.theme);
-        this.applyTheme();
-    }
-
     initEventListeners() {
         this.elements.prevMonth.onclick = () => this.changeMonth(-1);
         this.elements.nextMonth.onclick = () => this.changeMonth(1);
         this.elements.todayBtn.onclick = () => this.goToToday();
-        this.elements.themeToggle.onclick = () => this.toggleTheme();
 
         this.elements.exportBtn.onclick = () => this.exportCSV();
         this.elements.clearMonthBtn.onclick = () => this.clearCurrentMonth();
