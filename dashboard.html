@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OJT Hours Tracker - Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="page-header">
+            <h1>OJT Hours Tracker - Analytics Dashboard</h1>
+        </div>
+
+        <div class="dashboard-nav">
+            <a href="index.html" class="btn btn-nav">← Back to Calendar</a>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="dashboard-summary">
+            <div class="summary-card">
+                <div class="card-label">Total Hours Logged</div>
+                <div class="card-value" id="totalHoursLogged">0h 0m</div>
+            </div>
+            <div class="summary-card">
+                <div class="card-label">Required Hours</div>
+                <div class="card-value" id="requiredHoursDisplay">0h</div>
+            </div>
+            <div class="summary-card">
+                <div class="card-label">Completion</div>
+                <div class="card-value" id="completionPercentage">0%</div>
+            </div>
+            <div class="summary-card">
+                <div class="card-label">Days Present</div>
+                <div class="card-value" id="daysPresent">0</div>
+            </div>
+        </div>
+
+        <!-- Status Breakdown -->
+        <div class="dashboard-section">
+            <h3>Status Breakdown</h3>
+            <div class="status-breakdown">
+                <div class="breakdown-item">
+                    <span class="breakdown-label">Present (Work)</span>
+                    <div class="breakdown-bar">
+                        <div class="breakdown-fill present" id="presentBar"></div>
+                    </div>
+                    <span class="breakdown-count" id="presentCount">0</span>
+                </div>
+                <div class="breakdown-item">
+                    <span class="breakdown-label">Absent (No Work)</span>
+                    <div class="breakdown-bar">
+                        <div class="breakdown-fill absent" id="absentBar"></div>
+                    </div>
+                    <span class="breakdown-count" id="absentCount">0</span>
+                </div>
+                <div class="breakdown-item">
+                    <span class="breakdown-label">Holiday</span>
+                    <div class="breakdown-bar">
+                        <div class="breakdown-fill holiday" id="holidayBar"></div>
+                    </div>
+                    <span class="breakdown-count" id="holidayCount">0</span>
+                </div>
+                <div class="breakdown-item">
+                    <span class="breakdown-label">No Schedule</span>
+                    <div class="breakdown-bar">
+                        <div class="breakdown-fill no-schedule" id="noScheduleBar"></div>
+                    </div>
+                    <span class="breakdown-count" id="noScheduleCount">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monthly Summary Table -->
+        <div class="dashboard-section">
+            <h3>Monthly Summary</h3>
+            <div class="table-responsive">
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th>Month</th>
+                            <th>Hours</th>
+                            <th>Days Present</th>
+                            <th>Days Absent</th>
+                            <th>Average (per day)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="monthlySummaryBody">
+                        <tr>
+                            <td colspan="5" class="empty-state">No data available</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Daily Entries Table -->
+        <div class="dashboard-section">
+            <h3>Recent Entries</h3>
+            <div class="filter-controls">
+                <label>Filter by Month:
+                    <select id="monthFilter">
+                        <option value="">All Months</option>
+                    </select>
+                </label>
+            </div>
+            <div class="table-responsive">
+                <table class="entries-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Hours</th>
+                            <th>Status</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody id="entriesTableBody">
+                        <tr>
+                            <td colspan="4" class="empty-state">No entries found</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Detailed Absence Notes -->
+        <div class="dashboard-section">
+            <h3>Absence Notes</h3>
+            <div id="absenceNotesList" class="absence-notes-list">
+                <p class="empty-state">No absence notes recorded</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Initialize dashboard when DOM is ready
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (typeof dashboardApp !== 'undefined') {
+                await dashboardApp.init();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -413,6 +413,24 @@ h1 {
     background: #6d7b83;
 }
 
+.btn-print {
+    background: var(--brand-500);
+    color: white;
+}
+
+.btn-print:hover {
+    background: var(--brand-700);
+}
+
+.btn-dashboard {
+    background: var(--brand-700);
+    color: white;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .modal {
     display: none;
     position: fixed;
@@ -775,5 +793,308 @@ h1 {
 
     .export-help-text {
         font-size: 0.88rem;
+    }
+}
+
+/* Dashboard Styles */
+.dashboard-nav {
+    padding: 15px 30px;
+    border-bottom: 1px solid var(--surface-strong);
+    display: flex;
+    gap: 10px;
+}
+
+.btn-nav {
+    background: var(--brand-500);
+    color: white;
+    padding: 10px 16px;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: background 0.3s ease;
+}
+
+.btn-nav:hover {
+    background: var(--brand-700);
+}
+
+.btn-dashboard {
+    background: var(--brand-500);
+    color: white;
+}
+
+.btn-dashboard:hover {
+    background: var(--brand-700);
+}
+
+.dashboard-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    padding: 30px;
+    background: linear-gradient(140deg, var(--surface-soft), #e1ebf4);
+    border-bottom: 1px solid var(--surface-strong);
+}
+
+.summary-card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    text-align: center;
+}
+
+.card-label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+}
+
+.card-value {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--brand-700);
+}
+
+.dashboard-section {
+    padding: 30px;
+    border-bottom: 1px solid var(--surface-strong);
+}
+
+.dashboard-section h3 {
+    margin-top: 0;
+    margin-bottom: 25px;
+    color: var(--text-primary);
+    font-size: 1.3rem;
+}
+
+/* Status Breakdown */
+.status-breakdown {
+    display: grid;
+    gap: 20px;
+}
+
+.breakdown-item {
+    display: grid;
+    grid-template-columns: 120px 1fr 60px;
+    align-items: center;
+    gap: 15px;
+}
+
+.breakdown-label {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+.breakdown-bar {
+    height: 24px;
+    background: var(--surface-soft);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.breakdown-fill {
+    height: 100%;
+    border-radius: 12px;
+    transition: width 0.4s ease;
+}
+
+.breakdown-fill.present {
+    background: var(--success);
+}
+
+.breakdown-fill.absent {
+    background: var(--danger);
+}
+
+.breakdown-fill.holiday {
+    background: var(--holiday);
+}
+
+.breakdown-fill.no-schedule {
+    background: var(--nosched);
+}
+
+.breakdown-count {
+    text-align: right;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+/* Tables */
+.table-responsive {
+    overflow-x: auto;
+}
+
+.summary-table,
+.entries-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+}
+
+.summary-table th,
+.entries-table th {
+    background: var(--surface-soft);
+    padding: 15px;
+    text-align: left;
+    font-weight: 700;
+    color: var(--text-primary);
+    border-bottom: 2px solid var(--brand-300);
+}
+
+.summary-table td,
+.entries-table td {
+    padding: 15px;
+    border-bottom: 1px solid var(--surface-strong);
+    color: var(--text-primary);
+}
+
+.summary-table tr:hover,
+.entries-table tr:hover {
+    background: var(--surface-soft);
+}
+
+.empty-state {
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* Filter Controls */
+.filter-controls {
+    margin-bottom: 20px;
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.filter-controls label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+}
+
+.filter-controls select {
+    padding: 8px 12px;
+    border: 1px solid var(--brand-300);
+    border-radius: 6px;
+    background: white;
+    cursor: pointer;
+    font-size: 0.95rem;
+}
+
+/* Absence Notes List */
+.absence-notes-list {
+    display: grid;
+    gap: 15px;
+}
+
+.absence-note-item {
+    background: var(--surface-soft);
+    padding: 15px;
+    border-radius: 10px;
+    border-left: 4px solid var(--danger);
+}
+
+.absence-note-date {
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.absence-note-text {
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+/* Responsive Dashboard */
+@media (max-width: 768px) {
+    .dashboard-summary {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+        padding: 20px;
+    }
+
+    .dashboard-section {
+        padding: 20px;
+    }
+
+    .breakdown-item {
+        grid-template-columns: 100px 1fr 50px;
+        gap: 10px;
+    }
+
+    .summary-table th,
+    .entries-table th {
+        padding: 12px 8px;
+        font-size: 0.85rem;
+    }
+
+    .summary-table td,
+    .entries-table td {
+        padding: 12px 8px;
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .dashboard-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-section {
+        padding: 15px;
+    }
+
+    .dashboard-section h3 {
+        font-size: 1.1rem;
+        margin-bottom: 15px;
+    }
+
+    .breakdown-item {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .breakdown-count {
+        text-align: left;
+        font-size: 0.9rem;
+    }
+
+    .summary-table,
+    .entries-table {
+        font-size: 0.8rem;
+    }
+
+    .summary-table th,
+    .entries-table th {
+        padding: 10px 6px;
+        font-size: 0.75rem;
+    }
+
+    .summary-table td,
+    .entries-table td {
+        padding: 10px 6px;
+        font-size: 0.8rem;
+    }
+
+    .filter-controls {
+        flex-direction: column;
+    }
+
+    .filter-controls label {
+        width: 100%;
+    }
+
+    .filter-controls select {
+        width: 100%;
     }
 }

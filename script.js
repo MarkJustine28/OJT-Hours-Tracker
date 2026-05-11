@@ -86,21 +86,22 @@ class CalendarOJTTracker {
     }
 
     initEventListeners() {
-        this.elements.prevMonth.onclick = () => this.changeMonth(-1);
-        this.elements.nextMonth.onclick = () => this.changeMonth(1);
-        this.elements.todayBtn.onclick = () => this.goToToday();
+        // Safely attach event listeners only if elements exist
+        if (this.elements.prevMonth) this.elements.prevMonth.onclick = () => this.changeMonth(-1);
+        if (this.elements.nextMonth) this.elements.nextMonth.onclick = () => this.changeMonth(1);
+        if (this.elements.todayBtn) this.elements.todayBtn.onclick = () => this.goToToday();
 
-        this.elements.exportBtn.onclick = () => this.openExportOptions();
-        this.elements.printViewBtn.onclick = () => this.openPrintView();
-        this.elements.exportCsvBtn.onclick = () => this.exportCSV();
-        this.elements.exportPdfBtn.onclick = () => this.exportPdf();
-        this.elements.cancelExportBtn.onclick = () => this.closeExportOptions();
-        this.elements.clearMonthBtn.onclick = () => this.clearCurrentMonth();
+        if (this.elements.exportBtn) this.elements.exportBtn.onclick = () => this.openExportOptions();
+        if (this.elements.printViewBtn) this.elements.printViewBtn.onclick = () => this.openPrintView();
+        if (this.elements.exportCsvBtn) this.elements.exportCsvBtn.onclick = () => this.exportCSV();
+        if (this.elements.exportPdfBtn) this.elements.exportPdfBtn.onclick = () => this.exportPdf();
+        if (this.elements.cancelExportBtn) this.elements.cancelExportBtn.onclick = () => this.closeExportOptions();
+        if (this.elements.clearMonthBtn) this.elements.clearMonthBtn.onclick = () => this.clearCurrentMonth();
 
-        this.elements.saveHours.onclick = () => this.saveHours();
-        this.elements.cancelBtn.onclick = () => this.closeModal();
+        if (this.elements.saveHours) this.elements.saveHours.onclick = () => this.saveHours();
+        if (this.elements.cancelBtn) this.elements.cancelBtn.onclick = () => this.closeModal();
 
-        this.elements.saveSettings.onclick = () => this.saveSettingsFunc();
+        if (this.elements.saveSettings) this.elements.saveSettings.onclick = () => this.saveSettingsFunc();
 
         window.onclick = (e) => {
             if (e.target === this.elements.editModal) {
@@ -665,4 +666,359 @@ class CalendarOJTTracker {
     }
 }
 
-const tracker = new CalendarOJTTracker();
+// Initialize Calendar Tracker only on calendar page
+if (document.getElementById('calendar')) {
+    const tracker = new CalendarOJTTracker();
+}
+
+// ========================================
+// Dashboard Analytics
+// ========================================
+class DashboardApp {
+    constructor() {
+        this.allEntries = {};
+        this.settings = {
+            requiredHours: 240,
+        };
+        this.elements = {};  // Will be populated on init
+    }
+
+    async init() {
+        try {
+            // Initialize element references
+            this.elements = {
+                totalHoursLogged: document.getElementById('totalHoursLogged'),
+                requiredHoursDisplay: document.getElementById('requiredHoursDisplay'),
+                completionPercentage: document.getElementById('completionPercentage'),
+                daysPresent: document.getElementById('daysPresent'),
+                presentBar: document.getElementById('presentBar'),
+                absentBar: document.getElementById('absentBar'),
+                holidayBar: document.getElementById('holidayBar'),
+                noScheduleBar: document.getElementById('noScheduleBar'),
+                presentCount: document.getElementById('presentCount'),
+                absentCount: document.getElementById('absentCount'),
+                holidayCount: document.getElementById('holidayCount'),
+                noScheduleCount: document.getElementById('noScheduleCount'),
+                monthlySummaryBody: document.getElementById('monthlySummaryBody'),
+                entriesTableBody: document.getElementById('entriesTableBody'),
+                absenceNotesList: document.getElementById('absenceNotesList'),
+                monthFilter: document.getElementById('monthFilter'),
+            };
+
+            await this.loadAllData();
+            await this.loadSettings();
+            this.renderDashboard();
+            this.setupEventListeners();
+        } catch (error) {
+            console.error('Failed to initialize dashboard:', error);
+        }
+    }
+
+    async loadAllData() {
+        try {
+            const response = await fetch(`${API_BASE}/api/entries`);
+            if (!response.ok) throw new Error('Failed to fetch entries');
+            const data = await response.json();
+            // Handle both direct object and wrapped format
+            this.allEntries = data.data || data || {};
+        } catch (error) {
+            console.error('Error loading entries:', error);
+            this.allEntries = {};
+        }
+    }
+
+    async loadSettings() {
+        try {
+            // Try to fetch from API first
+            const response = await fetch(`${API_BASE}/api/settings`);
+            if (response.ok) {
+                const data = await response.json();
+                this.settings.requiredHours = data.requiredHours || 240;
+            } else {
+                // Fall back to localStorage
+                const stored = localStorage.getItem('ojt_settings');
+                if (stored) {
+                    this.settings = JSON.parse(stored);
+                }
+            }
+        } catch (error) {
+            console.error('Error loading settings:', error);
+            // Fall back to localStorage or default
+            try {
+                const stored = localStorage.getItem('ojt_settings');
+                if (stored) {
+                    this.settings = JSON.parse(stored);
+                }
+            } catch (e) {
+                console.error('Error loading settings from localStorage:', e);
+            }
+        }
+    }
+
+    renderDashboard() {
+        this.updateSummaryCards();
+        this.updateStatusBreakdown();
+        this.populateMonthlySummary();
+        this.populateEntriesTable();
+        this.populateAbsenceNotes();
+        this.populateMonthFilter();
+    }
+
+    updateSummaryCards() {
+        const stats = this.calculateStats();
+        
+        // Total hours logged
+        const totalHours = Math.floor(stats.totalMinutes / 60);
+        const totalMinutes = stats.totalMinutes % 60;
+        this.elements.totalHoursLogged.textContent = `${totalHours}h ${totalMinutes}m`;
+
+        // Required hours
+        const requiredHours = this.settings.requiredHours || 240;
+        this.elements.requiredHoursDisplay.textContent = `${requiredHours}h`;
+
+        // Completion percentage
+        const completionPercent = requiredHours > 0 ? Math.round((stats.totalMinutes / (requiredHours * 60)) * 100) : 0;
+        this.elements.completionPercentage.textContent = `${Math.min(completionPercent, 100)}%`;
+
+        // Days present
+        this.elements.daysPresent.textContent = stats.presentDays;
+    }
+
+    updateStatusBreakdown() {
+        const stats = this.calculateStats();
+        const total = stats.presentDays + stats.absentDays + stats.holidayDays + stats.noScheduleDays;
+
+        if (total === 0) {
+            this.elements.presentBar.style.width = '0%';
+            this.elements.absentBar.style.width = '0%';
+            this.elements.holidayBar.style.width = '0%';
+            this.elements.noScheduleBar.style.width = '0%';
+        } else {
+            this.elements.presentBar.style.width = `${(stats.presentDays / total) * 100}%`;
+            this.elements.absentBar.style.width = `${(stats.absentDays / total) * 100}%`;
+            this.elements.holidayBar.style.width = `${(stats.holidayDays / total) * 100}%`;
+            this.elements.noScheduleBar.style.width = `${(stats.noScheduleDays / total) * 100}%`;
+        }
+
+        this.elements.presentCount.textContent = stats.presentDays;
+        this.elements.absentCount.textContent = stats.absentDays;
+        this.elements.holidayCount.textContent = stats.holidayDays;
+        this.elements.noScheduleCount.textContent = stats.noScheduleDays;
+    }
+
+    populateMonthlySummary() {
+        const monthlyData = this.getMonthlySummary();
+        const tbody = this.elements.monthlySummaryBody;
+        
+        if (Object.keys(monthlyData).length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No data available</td></tr>';
+            return;
+        }
+
+        const html = Object.entries(monthlyData)
+            .sort((a, b) => new Date(b[0]) - new Date(a[0]))
+            .map(([month, data]) => {
+                const avgHours = data.presentDays > 0 ? (data.totalMinutes / 60 / data.presentDays).toFixed(1) : '0.0';
+                const monthName = this.formatMonthName(month);
+                return `
+                    <tr>
+                        <td>${monthName}</td>
+                        <td>${Math.floor(data.totalMinutes / 60)}h ${data.totalMinutes % 60}m</td>
+                        <td>${data.presentDays}</td>
+                        <td>${data.absentDays}</td>
+                        <td>${avgHours}h</td>
+                    </tr>
+                `;
+            })
+            .join('');
+        
+        tbody.innerHTML = html;
+    }
+
+    populateEntriesTable() {
+        const entries = this.getAllEntries();
+        const tbody = this.elements.entriesTableBody;
+
+        if (entries.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="empty-state">No entries found</td></tr>';
+            return;
+        }
+
+        const html = entries
+            .slice(0, 50) // Show last 50 entries
+            .map(entry => {
+                const hours = Math.floor(entry.totalMinutes / 60);
+                const minutes = entry.totalMinutes % 60;
+                const statusLabel = entry.status === 'work' ? 'Present' : 
+                                   entry.status === 'holiday' ? 'Holiday' : 'No Schedule';
+                return `
+                    <tr>
+                        <td>${entry.date}</td>
+                        <td>${hours > 0 ? `${hours}h ${minutes}m` : '-'}</td>
+                        <td>${statusLabel}</td>
+                        <td>${this.escapeHtml(entry.notes || '')}</td>
+                    </tr>
+                `;
+            })
+            .join('');
+
+        tbody.innerHTML = html;
+    }
+
+    populateAbsenceNotes() {
+        const entries = this.getAllEntries();
+        const absenceEntries = entries.filter(e => e.notes && (e.status === 'work' && e.totalMinutes === 0));
+
+        const container = this.elements.absenceNotesList;
+
+        if (absenceEntries.length === 0) {
+            container.innerHTML = '<p class="empty-state">No absence notes recorded</p>';
+            return;
+        }
+
+        const html = absenceEntries
+            .map(entry => `
+                <div class="absence-note-item">
+                    <div class="absence-note-date">${entry.date}</div>
+                    <div class="absence-note-text">${this.escapeHtml(entry.notes)}</div>
+                </div>
+            `)
+            .join('');
+
+        container.innerHTML = html;
+    }
+
+    populateMonthFilter() {
+        const monthSet = new Set();
+        Object.keys(this.allEntries).forEach(date => {
+            const month = date.substring(0, 7); // YYYY-MM
+            monthSet.add(month);
+        });
+
+        const months = Array.from(monthSet).sort().reverse();
+        const select = this.elements.monthFilter;
+
+        months.forEach(month => {
+            const option = document.createElement('option');
+            option.value = month;
+            option.textContent = new Date(month + '-01').toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+            select.appendChild(option);
+        });
+    }
+
+    setupEventListeners() {
+        this.elements.monthFilter.addEventListener('change', () => {
+            this.populateEntriesTable();
+        });
+    }
+
+    calculateStats() {
+        let totalMinutes = 0;
+        let presentDays = 0;
+        let absentDays = 0;
+        let holidayDays = 0;
+        let noScheduleDays = 0;
+
+        Object.values(this.allEntries).forEach(entry => {
+            if (typeof entry === 'object' && entry !== null) {
+                const hours = entry.hours || 0;
+                const minutes = entry.minutes || 0;
+                totalMinutes += (hours * 60) + minutes;
+
+                if (entry.status === 'holiday') {
+                    holidayDays++;
+                } else if (entry.status === 'no-schedule') {
+                    noScheduleDays++;
+                } else if (hours > 0) {
+                    presentDays++;
+                } else {
+                    absentDays++;
+                }
+            }
+        });
+
+        return {
+            totalMinutes: Math.round(totalMinutes),
+            presentDays,
+            absentDays,
+            holidayDays,
+            noScheduleDays,
+        };
+    }
+
+    getMonthlySummary() {
+        const monthly = {};
+
+        Object.entries(this.allEntries).forEach(([date, entry]) => {
+            const month = date.substring(0, 7);
+            
+            if (!monthly[month]) {
+                monthly[month] = {
+                    totalMinutes: 0,
+                    presentDays: 0,
+                    absentDays: 0,
+                    holidayDays: 0,
+                    noScheduleDays: 0,
+                };
+            }
+
+            if (typeof entry === 'object' && entry !== null) {
+                const hours = entry.hours || 0;
+                const minutes = entry.minutes || 0;
+                monthly[month].totalMinutes += (hours * 60) + minutes;
+
+                if (entry.status === 'holiday') {
+                    monthly[month].holidayDays++;
+                } else if (entry.status === 'no-schedule') {
+                    monthly[month].noScheduleDays++;
+                } else if (hours > 0) {
+                    monthly[month].presentDays++;
+                } else {
+                    monthly[month].absentDays++;
+                }
+            }
+        });
+
+        return monthly;
+    }
+
+    getAllEntries() {
+        const entries = [];
+
+        Object.entries(this.allEntries).forEach(([date, entry]) => {
+            if (typeof entry === 'object' && entry !== null) {
+                const hours = entry.hours || 0;
+                const minutes = entry.minutes || 0;
+                const totalMinutes = (hours * 60) + minutes;
+                
+                entries.push({
+                    date,
+                    hours,
+                    totalMinutes: Math.round(totalMinutes),
+                    status: entry.status || 'work',
+                    notes: entry.notes || '',
+                });
+            }
+        });
+
+        return entries.sort((a, b) => new Date(b.date) - new Date(a.date));
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    formatMonthName(monthStr) {
+        // Convert "2026-02" to "February 2026"
+        try {
+            const date = new Date(monthStr + '-01');
+            return new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(date);
+        } catch (e) {
+            return monthStr;
+        }
+    }
+}
+
+const dashboardApp = new DashboardApp();
