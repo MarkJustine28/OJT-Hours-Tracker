@@ -53,6 +53,7 @@ function normalizeEntryData(data) {
   return {
     hours: Number(data.hours) || 0,
     status: data.status || 'work',
+    notes: typeof data.notes === 'string' ? data.notes : '',
   };
 }
 
@@ -189,6 +190,7 @@ async function handlePutEntry(req, res) {
     const date = req.params.date;
     const hours = Number(req.body.hours);
     const status = req.body.status;
+    const notes = typeof req.body.notes === 'string' ? req.body.notes.trim() : '';
 
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       return res.status(400).json({
@@ -208,9 +210,16 @@ async function handlePutEntry(req, res) {
       });
     }
 
+    if (notes.length > 500) {
+      return res.status(400).json({
+        message: 'notes must be 500 characters or less',
+      });
+    }
+
     await firestore.collection('entries').doc(date).set({
       hours,
       status,
+      notes,
       updated_at: new Date().toISOString(),
     });
 
@@ -218,6 +227,7 @@ async function handlePutEntry(req, res) {
       date,
       hours,
       status,
+      notes,
     });
   } catch (error) {
     return sendServerError(res, 'Failed to save entry', error);

@@ -6,6 +6,8 @@
     --bg-start: #edf3f8;
     --bg-end: #d9e6f2;
     --surface: #fdfefe;
+    --surface-strong: #f6f9fc;
+    --surface-soft: #eef4fa;
     --text-primary: #243444;
     --text-muted: #617487;
     --brand-700: #34506a;
@@ -17,6 +19,25 @@
     --warning: #c89a4b;
     --holiday: #7d6ca8;
     --nosched: #7f8e97;
+}
+
+:root[data-theme="dark"] {
+    --bg-start: #101722;
+    --bg-end: #182332;
+    --surface: #1c2633;
+    --surface-strong: #202b3a;
+    --surface-soft: #253244;
+    --text-primary: #e8eef5;
+    --text-muted: #aebccc;
+    --brand-700: #8ea9c4;
+    --brand-500: #6d8fb0;
+    --brand-300: #3a4d63;
+    --accent-soft: #243244;
+    --success: #4d9e73;
+    --danger: #ce7a6d;
+    --warning: #c89a4b;
+    --holiday: #8c79c0;
+    --nosched: #748694;
 }
 
 body {
@@ -46,9 +67,34 @@ h1 {
     font-size: 2.5rem;
 }
 
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    background: linear-gradient(135deg, var(--brand-700), var(--brand-500));
+    padding: 18px 24px;
+}
+
+.page-header h1 {
+    background: none;
+    padding: 0;
+}
+
+.btn-theme {
+    background: rgba(255, 255, 255, 0.16);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    min-width: 88px;
+}
+
+.btn-theme:hover {
+    background: rgba(255, 255, 255, 0.24);
+}
+
 .progress-section {
     padding: 25px 30px;
-    background: linear-gradient(140deg, #eef4fa, #e1ebf4);
+    background: linear-gradient(140deg, var(--surface-soft), #e1ebf4);
     color: var(--text-primary);
 }
 
@@ -137,7 +183,7 @@ h1 {
     align-items: center;
     justify-content: space-between;
     padding: 20px 30px;
-    background: #f6f9fc;
+    background: var(--surface-strong);
     border-bottom: 2px solid var(--brand-300);
 }
 
@@ -168,7 +214,7 @@ h1 {
     display: grid;
     grid-template-columns: 1fr 1fr;
     padding: 12px 22px;
-    background: #f8fbff;
+    background: var(--surface-soft);
     gap: 12px;
     align-items: center;
 }
@@ -238,6 +284,19 @@ h1 {
     font-weight: 500;
     border: 3px solid transparent;
     position: relative;
+}
+
+.day-note-badge {
+    position: absolute;
+    bottom: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.65rem;
+    line-height: 1;
+    padding: 3px 7px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.22);
+    color: inherit;
 }
 
 .calendar-day.other-month {
@@ -394,6 +453,10 @@ h1 {
     text-align: center;
 }
 
+:root[data-theme="dark"] .modal-content {
+    background: var(--surface);
+}
+
 .modal-content h3 {
     margin-top: 0;
     color: var(--text-primary);
@@ -403,6 +466,28 @@ h1 {
     display: block;
     margin: 25px 0;
     font-weight: 600;
+}
+
+#notesInput {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    background: #f8f9fa;
+    color: var(--text-primary);
+    resize: vertical;
+    min-height: 90px;
+}
+
+:root[data-theme="dark"] #notesInput,
+:root[data-theme="dark"] #hoursSelect,
+:root[data-theme="dark"] #minutesSelect,
+:root[data-theme="dark"] #statusSelect,
+:root[data-theme="dark"] .settings input {
+    background: #111a25;
+    border-color: #314055;
+    color: var(--text-primary);
 }
 
 #hoursSelect {
@@ -441,6 +526,16 @@ h1 {
 }
 
 @media (max-width: 768px) {
+    body {
+        padding: 12px;
+    }
+
+    .page-header {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+    }
+
     .progress-section {
         padding: 20px;
     }
@@ -466,5 +561,30 @@ h1 {
     
     .stats {
         justify-content: center;
+    }
+
+    .calendar-day {
+        min-height: 62px;
+        padding: 4px;
+    }
+
+    .day-note-badge {
+        font-size: 0.58rem;
+        bottom: 4px;
+    }
+
+    .actions {
+        display: grid;
+        gap: 10px;
+    }
+
+    .btn {
+        width: calc(100% - 20px);
+        margin: 0 10px;
+    }
+
+    .modal-content {
+        margin: 10% auto;
+        padding: 22px;
     }
 }

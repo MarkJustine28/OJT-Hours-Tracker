@@ -12,6 +12,8 @@ const API_BASE = (() => {
     return 'https://ojt-hours-tracker-ylcm.onrender.com';  // Render backend
 })();
 
+const THEME_STORAGE_KEY = 'ojt-hours-tracker-theme';
+
 class CalendarOJTTracker {
     constructor() {
         this.currentDate = new Date();
@@ -20,6 +22,7 @@ class CalendarOJTTracker {
             requiredHours: 240,
         };
         this.selectedDay = null;
+        this.theme = this.loadThemePreference();
 
         this.elements = {
             calendar: document.getElementById('calendar'),
@@ -31,12 +34,14 @@ class CalendarOJTTracker {
             estimatedDaysLeft: document.getElementById('estimatedDaysLeft'),
             avgHours: document.getElementById('avgHours'),
             exportBtn: document.getElementById('exportBtn'),
+            themeToggle: document.getElementById('themeToggle'),
             clearMonthBtn: document.getElementById('clearMonthBtn'),
             editModal: document.getElementById('editModal'),
             modalDate: document.getElementById('modalDate'),
             hoursSelect: document.getElementById('hoursSelect'),
             minutesSelect: document.getElementById('minutesSelect'),
             statusSelect: document.getElementById('statusSelect'),
+            notesInput: document.getElementById('notesInput'),
             saveHours: document.getElementById('saveHours'),
             cancelBtn: document.getElementById('cancelBtn'),
             requiredHours: document.getElementById('requiredHours'),
@@ -50,6 +55,7 @@ class CalendarOJTTracker {
     }
 
     async init() {
+        this.applyTheme();
         await this.loadRemoteData();
         this.elements.requiredHours.value = this.settings.requiredHours;
         this.renderCalendar();
@@ -79,10 +85,32 @@ class CalendarOJTTracker {
         }
     }
 
+    loadThemePreference() {
+        if (typeof window === 'undefined') {
+            return 'light';
+        }
+
+        return window.localStorage.getItem(THEME_STORAGE_KEY) || 'light';
+    }
+
+    applyTheme() {
+        document.documentElement.dataset.theme = this.theme;
+        if (this.elements.themeToggle) {
+            this.elements.themeToggle.textContent = this.theme === 'dark' ? 'Light' : 'Dark';
+        }
+    }
+
+    toggleTheme() {
+        this.theme = this.theme === 'dark' ? 'light' : 'dark';
+        window.localStorage.setItem(THEME_STORAGE_KEY, this.theme);
+        this.applyTheme();
+    }
+
     initEventListeners() {
         this.elements.prevMonth.onclick = () => this.changeMonth(-1);
         this.elements.nextMonth.onclick = () => this.changeMonth(1);
         this.elements.todayBtn.onclick = () => this.goToToday();
+        this.elements.themeToggle.onclick = () => this.toggleTheme();
 
         this.elements.exportBtn.onclick = () => this.exportCSV();
         this.elements.clearMonthBtn.onclick = () => this.clearCurrentMonth();
@@ -177,6 +205,7 @@ class CalendarOJTTracker {
             const hours = this.getDayHours(date);
             const dayData = this.data[dayDiv.dataset.date];
             const status = (typeof dayData === 'object' && dayData !== null) ? dayData.status : 'work';
+            const notes = (typeof dayData === 'object' && dayData !== null) ? (dayData.notes || '') : '';
             const dayOfWeek = date.getDay();
 
             if (status === 'holiday') {
@@ -203,6 +232,14 @@ class CalendarOJTTracker {
 
             dayDiv.appendChild(dayContent);
             dayDiv.appendChild(hoursContent);
+
+            if (notes) {
+                const noteBadge = document.createElement('div');
+                noteBadge.className = 'day-note-badge';
+                noteBadge.textContent = 'Note';
+                dayDiv.appendChild(noteBadge);
+                dayDiv.title = notes;
+            }
 
             this.elements.calendar.appendChild(dayDiv);
         }
@@ -239,7 +276,7 @@ class CalendarOJTTracker {
         });
 
         const stored = this.data[this.selectedDay];
-        let hours = 0, minutes = 0, status = 'work';
+        let hours = 0, minutes = 0, status = 'work', notes = '';
 
         if (typeof stored === 'number') {
             hours = Math.floor(stored);
@@ -248,6 +285,7 @@ class CalendarOJTTracker {
             hours = Math.floor(stored.hours || 0);
             minutes = Math.round(((stored.hours || 0) - hours) * 60);
             status = stored.status || 'work';
+            notes = stored.notes || '';
         } else {
             const dayOfWeek = date.getDay();
             if (dayOfWeek === 0) {
@@ -257,6 +295,7 @@ class CalendarOJTTracker {
 
         this.elements.hoursSelect.value = hours;
         this.elements.statusSelect.value = status;
+        this.elements.notesInput.value = notes;
 
         const snappedMinutes = [0, 15, 30, 45].reduce((prev, curr) =>
             Math.abs(curr - minutes) < Math.abs(prev - minutes) ? curr : prev
@@ -270,6 +309,7 @@ class CalendarOJTTracker {
         const hours = parseInt(this.elements.hoursSelect.value, 10);
         const minutes = parseInt(this.elements.minutesSelect.value, 10) || 0;
         const status = this.elements.statusSelect.value;
+        const notes = this.elements.notesInput.value.trim();
         const totalHours = hours + (minutes / 60);
 
         if (!this.selectedDay) {
@@ -282,13 +322,15 @@ class CalendarOJTTracker {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     hours: Number(totalHours.toFixed(2)),
-                    status
+                    status,
+                    notes
                 })
             });
 
             this.data[this.selectedDay] = {
                 hours: payload.hours,
-                status: payload.status
+                status: payload.status,
+                notes: payload.notes || ''
             };
 
             this.closeModal();
@@ -303,6 +345,7 @@ class CalendarOJTTracker {
     closeModal() {
         this.elements.editModal.style.display = 'none';
         this.selectedDay = null;
+        this.elements.notesInput.value = '';
     }
 
     updateSummary() {
@@ -355,68 +398,78 @@ class CalendarOJTTracker {
         return `${h}h ${m}m`;
     }
 
-    exportCSV() {
-        const dates = Object.keys(this.data);
-        if (dates.length === 0) return alert('No data to export!');
+    async exportCSV() {
+        try {
+            const entriesPayload = await this.fetchJson(`${API_BASE}/api/entries`);
+            const exportData = entriesPayload.data || {};
+            const dates = Object.keys(exportData);
 
-        dates.sort();
+            if (dates.length === 0) return alert('No data to export!');
 
-        const parseLocalDate = (dateStr) => {
-            const [year, month, day] = dateStr.split('-').map(Number);
-            return new Date(year, month - 1, day);
-        };
+            dates.sort();
 
-        const startDate = parseLocalDate(dates[0]);
-        const endDate = parseLocalDate(dates[dates.length - 1]);
+            const parseLocalDate = (dateStr) => {
+                const [year, month, day] = dateStr.split('-').map(Number);
+                return new Date(year, month - 1, day);
+            };
 
-        const lines = [];
+            const startDate = parseLocalDate(dates[0]);
+            const endDate = parseLocalDate(dates[dates.length - 1]);
 
-        const startMonth = startDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-        const endMonth = endDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-        lines.push(`"Daily Time Record","${startMonth} - ${endMonth}"`);
-        lines.push('');
-        lines.push('"Date","Day","Hours","Status"');
+            const lines = [];
 
-        const current = new Date(startDate);
-        while (current <= endDate) {
-            const key = this.formatDateKey(current);
-            const dayName = current.toLocaleDateString('en-US', { weekday: 'short' });
-            const dayOfWeek = current.getDay();
+            const startMonth = startDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            const endMonth = endDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            lines.push(`"Daily Time Record","${startMonth} - ${endMonth}"`);
+            lines.push('');
+            lines.push('"Date","Day","Hours","Status","Notes"');
 
-            const dayData = this.data[key];
-            let hours = 0, status = 'Regular';
+            const current = new Date(startDate);
+            while (current <= endDate) {
+                const key = this.formatDateKey(current);
+                const dayName = current.toLocaleDateString('en-US', { weekday: 'short' });
+                const dayOfWeek = current.getDay();
 
-            if (typeof dayData === 'number') {
-                hours = dayData;
-                status = hours > 0 ? 'Present' : 'Absent';
-            } else if (typeof dayData === 'object' && dayData !== null) {
-                hours = dayData.hours || 0;
-                const dayStatus = dayData.status || 'work';
-                if (dayStatus === 'holiday') {
-                    status = 'Holiday';
-                } else if (dayStatus === 'no-schedule') {
-                    status = 'No Schedule';
-                } else {
+                const dayData = exportData[key];
+                let hours = 0, status = 'Regular';
+                let notes = '';
+
+                if (typeof dayData === 'number') {
+                    hours = dayData;
                     status = hours > 0 ? 'Present' : 'Absent';
+                } else if (typeof dayData === 'object' && dayData !== null) {
+                    hours = dayData.hours || 0;
+                    notes = dayData.notes || '';
+                    const dayStatus = dayData.status || 'work';
+                    if (dayStatus === 'holiday') {
+                        status = 'Holiday';
+                    } else if (dayStatus === 'no-schedule') {
+                        status = 'No Schedule';
+                    } else {
+                        status = hours > 0 ? 'Present' : 'Absent';
+                    }
+                } else if (dayOfWeek === 0) {
+                    status = 'No Schedule';
                 }
-            } else if (dayOfWeek === 0) {
-                status = 'No Schedule';
+
+                const hoursFormatted = (status === 'Holiday' || status === 'No Schedule') ? '-' : (hours > 0 ? this.formatHours(hours) : '-');
+                const notesFormatted = `"${String(notes).replace(/"/g, '""')}"`;
+                lines.push(`"${key}","${dayName}","${hoursFormatted}","${status}",${notesFormatted}`);
+
+                current.setDate(current.getDate() + 1);
             }
 
-            const hoursFormatted = (status === 'Holiday' || status === 'No Schedule') ? '-' : (hours > 0 ? this.formatHours(hours) : '-');
-            lines.push(`"${key}","${dayName}","${hoursFormatted}","${status}"`);
-
-            current.setDate(current.getDate() + 1);
+            const csv = lines.join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'DTR-Complete.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            alert(error.message || 'Failed to export CSV');
         }
-
-        const csv = lines.join('\n');
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'DTR-Complete.csv';
-        a.click();
-        URL.revokeObjectURL(url);
     }
 
     async clearCurrentMonth() {
