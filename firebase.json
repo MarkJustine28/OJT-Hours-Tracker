@@ -12,6 +12,10 @@
     ],
     "rewrites": [
       {
+        "source": "/dashboard.html",
+        "destination": "/dashboard.html"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

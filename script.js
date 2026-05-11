@@ -681,6 +681,7 @@ class DashboardApp {
             requiredHours: 240,
         };
         this.elements = {};  // Will be populated on init
+        this.debugMode = true;
     }
 
     async init() {
@@ -705,56 +706,71 @@ class DashboardApp {
                 monthFilter: document.getElementById('monthFilter'),
             };
 
+            this.showDebug(`Dashboard init started | API: ${API_BASE}`);
+
             await this.loadAllData();
             await this.loadSettings();
             this.renderDashboard();
             this.setupEventListeners();
+            
+            this.showDebug('Dashboard ready!');
         } catch (error) {
+            this.showDebug(`✗ Fatal error: ${error.message}`);
             console.error('Failed to initialize dashboard:', error);
         }
     }
 
     async loadAllData() {
         try {
-            console.log(`[Dashboard] Fetching entries from: ${API_BASE}/api/entries`);
-            const response = await fetch(`${API_BASE}/api/entries`);
+            const url = `${API_BASE}/api/entries`;
+            this.showDebug(`Fetching from: ${url}`);
+            
+            const response = await fetch(url);
+            this.showDebug(`Response status: ${response.status} ${response.statusText}`);
+            
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
+            
             const data = await response.json();
-            console.log(`[Dashboard] Successfully loaded ${Object.keys(data.data || data).length} entries`);
+            this.showDebug(`Raw response keys: ${Object.keys(data).join(', ')}`);
+            
             // Handle both direct object and wrapped format
             this.allEntries = data.data || data || {};
+            const count = Object.keys(this.allEntries).length;
+            this.showDebug(`✓ Loaded ${count} entries`);
         } catch (error) {
-            console.error('[Dashboard] Error loading entries:', error);
-            console.error('[Dashboard] API Base URL:', API_BASE);
+            this.showDebug(`✗ Error loading entries: ${error.message}`);
+            this.showDebug(`API Base: ${API_BASE}`);
             this.allEntries = {};
         }
     }
 
     async loadSettings() {
         try {
-            // Try to fetch from API first
-            console.log(`[Dashboard] Fetching settings from: ${API_BASE}/api/settings`);
-            const response = await fetch(`${API_BASE}/api/settings`);
+            const url = `${API_BASE}/api/settings`;
+            this.showDebug(`Fetching settings from: ${url}`);
+            
+            const response = await fetch(url);
+            this.showDebug(`Settings response status: ${response.status}`);
+            
             if (response.ok) {
                 const data = await response.json();
                 this.settings.requiredHours = data.requiredHours || 240;
-                console.log(`[Dashboard] Successfully loaded settings: ${this.settings.requiredHours}h required`);
+                this.showDebug(`✓ Loaded settings: ${this.settings.requiredHours}h required`);
             } else {
                 throw new Error(`HTTP ${response.status}`);
             }
         } catch (error) {
-            console.warn('[Dashboard] Failed to fetch settings from API, falling back to localStorage:', error.message);
-            // Fall back to localStorage
+            this.showDebug(`⚠️ Settings API failed: ${error.message} - Using localStorage/default`);
             try {
                 const stored = localStorage.getItem('ojt_settings');
                 if (stored) {
                     this.settings = JSON.parse(stored);
-                    console.log('[Dashboard] Loaded settings from localStorage');
+                    this.showDebug(`✓ Loaded settings from localStorage`);
                 }
             } catch (e) {
-                console.error('[Dashboard] Error loading settings from localStorage:', e);
+                this.showDebug(`✗ localStorage error: ${e.message}`);
             }
         }
     }
@@ -848,7 +864,21 @@ class DashboardApp {
             return;
         }
 
-        const html = entries
+        // Get the selected month filter value
+        const selectedMonth = this.elements.monthFilter.value;
+        
+        // Filter entries by selected month if not "All Months"
+        let filteredEntries = entries;
+        if (selectedMonth) {
+            filteredEntries = entries.filter(entry => entry.date.startsWith(selectedMonth));
+        }
+
+        if (filteredEntries.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="empty-state">No entries found for this month</td></tr>';
+            return;
+        }
+
+        const html = filteredEntries
             .slice(0, 50) // Show last 50 entries
             .map(entry => {
                 const hours = Math.floor(entry.totalMinutes / 60);
@@ -914,6 +944,18 @@ class DashboardApp {
         this.elements.monthFilter.addEventListener('change', () => {
             this.populateEntriesTable();
         });
+    }
+
+    showDebug(message) {
+        if (this.debugMode) {
+            console.log(message);
+            const debugPanel = document.getElementById('debugPanel');
+            const debugMessage = document.getElementById('debugMessage');
+            if (debugPanel && debugMessage) {
+                debugPanel.style.display = 'block';
+                debugMessage.textContent = (debugMessage.textContent ? debugMessage.textContent + '\n' : '') + message;
+            }
+        }
     }
 
     calculateStats() {
