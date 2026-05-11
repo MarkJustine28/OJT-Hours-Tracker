@@ -716,13 +716,18 @@ class DashboardApp {
 
     async loadAllData() {
         try {
+            console.log(`[Dashboard] Fetching entries from: ${API_BASE}/api/entries`);
             const response = await fetch(`${API_BASE}/api/entries`);
-            if (!response.ok) throw new Error('Failed to fetch entries');
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
             const data = await response.json();
+            console.log(`[Dashboard] Successfully loaded ${Object.keys(data.data || data).length} entries`);
             // Handle both direct object and wrapped format
             this.allEntries = data.data || data || {};
         } catch (error) {
-            console.error('Error loading entries:', error);
+            console.error('[Dashboard] Error loading entries:', error);
+            console.error('[Dashboard] API Base URL:', API_BASE);
             this.allEntries = {};
         }
     }
@@ -730,27 +735,26 @@ class DashboardApp {
     async loadSettings() {
         try {
             // Try to fetch from API first
+            console.log(`[Dashboard] Fetching settings from: ${API_BASE}/api/settings`);
             const response = await fetch(`${API_BASE}/api/settings`);
             if (response.ok) {
                 const data = await response.json();
                 this.settings.requiredHours = data.requiredHours || 240;
+                console.log(`[Dashboard] Successfully loaded settings: ${this.settings.requiredHours}h required`);
             } else {
-                // Fall back to localStorage
-                const stored = localStorage.getItem('ojt_settings');
-                if (stored) {
-                    this.settings = JSON.parse(stored);
-                }
+                throw new Error(`HTTP ${response.status}`);
             }
         } catch (error) {
-            console.error('Error loading settings:', error);
-            // Fall back to localStorage or default
+            console.warn('[Dashboard] Failed to fetch settings from API, falling back to localStorage:', error.message);
+            // Fall back to localStorage
             try {
                 const stored = localStorage.getItem('ojt_settings');
                 if (stored) {
                     this.settings = JSON.parse(stored);
+                    console.log('[Dashboard] Loaded settings from localStorage');
                 }
             } catch (e) {
-                console.error('Error loading settings from localStorage:', e);
+                console.error('[Dashboard] Error loading settings from localStorage:', e);
             }
         }
     }
