@@ -55,7 +55,7 @@
         <div class="calendar" id="calendar"></div>
 
         <div class="actions">
-            <button id="exportBtn" class="btn btn-export">Export CSV</button>
+            <button id="exportBtn" class="btn btn-export">Export</button>
             <button id="clearMonthBtn" class="btn btn-clear">Clear Month</button>
         </div>
     </div>
@@ -106,6 +106,21 @@
             <div class="modal-actions">
                 <button id="saveHours" class="btn btn-save">Save</button>
                 <button id="cancelBtn" class="btn btn-cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Modal -->
+    <div id="exportOptionsModal" class="modal">
+        <div class="modal-content export-modal-content">
+            <h3>Export Options</h3>
+            <p class="export-help-text">Choose the format you want to generate.</p>
+
+            <div class="export-options">
+                <button id="exportCsvBtn" class="btn btn-save">CSV</button>
+                <button id="exportPdfBtn" class="btn btn-export">PDF</button>
+                <button id="printViewBtn" class="btn btn-print">Print View</button>
+                <button id="cancelExportBtn" class="btn btn-cancel">Cancel</button>
             </div>
         </div>
     </div>

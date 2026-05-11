@@ -43,7 +43,12 @@ class CalendarOJTTracker {
             requiredHours: document.getElementById('requiredHours'),
             saveSettings: document.getElementById('saveSettings'),
             progressFill: document.getElementById('progressFill'),
-            progressText: document.getElementById('progressText')
+            progressText: document.getElementById('progressText'),
+            exportOptionsModal: document.getElementById('exportOptionsModal'),
+            exportCsvBtn: document.getElementById('exportCsvBtn'),
+            exportPdfBtn: document.getElementById('exportPdfBtn'),
+            printViewBtn: document.getElementById('printViewBtn'),
+            cancelExportBtn: document.getElementById('cancelExportBtn')
         };
 
         this.initEventListeners();
@@ -85,7 +90,11 @@ class CalendarOJTTracker {
         this.elements.nextMonth.onclick = () => this.changeMonth(1);
         this.elements.todayBtn.onclick = () => this.goToToday();
 
-        this.elements.exportBtn.onclick = () => this.exportCSV();
+        this.elements.exportBtn.onclick = () => this.openExportOptions();
+        this.elements.exportCsvBtn.onclick = () => this.exportCSV();
+        this.elements.exportPdfBtn.onclick = () => this.exportPdf();
+        this.elements.printViewBtn.onclick = () => this.openPrintView();
+        this.elements.cancelExportBtn.onclick = () => this.closeExportOptions();
         this.elements.clearMonthBtn.onclick = () => this.clearCurrentMonth();
 
         this.elements.saveHours.onclick = () => this.saveHours();
@@ -97,7 +106,19 @@ class CalendarOJTTracker {
             if (e.target === this.elements.editModal) {
                 this.closeModal();
             }
+
+            if (e.target === this.elements.exportOptionsModal) {
+                this.closeExportOptions();
+            }
         };
+    }
+
+    openExportOptions() {
+        this.elements.exportOptionsModal.style.display = 'block';
+    }
+
+    closeExportOptions() {
+        this.elements.exportOptionsModal.style.display = 'none';
     }
 
     async saveSettingsFunc() {
@@ -286,6 +307,27 @@ class CalendarOJTTracker {
         const totalHours = hours + (minutes / 60);
 
         if (!this.selectedDay) {
+            alert('Select a date before saving.');
+            return;
+        }
+
+        if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
+            alert('Hours and minutes must be valid numbers.');
+            return;
+        }
+
+        if (![0, 15, 30, 45].includes(minutes)) {
+            alert('Minutes must be 00, 15, 30, or 45.');
+            return;
+        }
+
+        if (notes.length > 500) {
+            alert('Notes must be 500 characters or less.');
+            return;
+        }
+
+        if (totalHours < 0 || totalHours > 24) {
+            alert('Hours worked must be between 0 and 24.');
             return;
         }
 
@@ -311,7 +353,7 @@ class CalendarOJTTracker {
             this.updateSummary();
             this.updateProgress();
         } catch (error) {
-            alert(error.message || 'Failed to save hours');
+            alert(error.message || 'Failed to save hours. Check the selected date, hours, and notes.');
         }
     }
 
@@ -440,9 +482,147 @@ class CalendarOJTTracker {
             a.download = 'DTR-Complete.csv';
             a.click();
             URL.revokeObjectURL(url);
+            this.closeExportOptions();
         } catch (error) {
-            alert(error.message || 'Failed to export CSV');
+            alert(error.message || 'Failed to export CSV. Check that the Firestore data is available.');
         }
+    }
+
+    async exportPdf() {
+        try {
+            this.closeExportOptions();
+            const printWindow = this.buildPrintWindow();
+            printWindow.focus();
+            setTimeout(() => {
+                printWindow.print();
+            }, 250);
+        } catch (error) {
+            alert(error.message || 'Failed to prepare PDF export.');
+        }
+    }
+
+    openPrintView() {
+        this.closeExportOptions();
+        const printWindow = this.buildPrintWindow();
+        printWindow.focus();
+    }
+
+    buildPrintWindow() {
+        const printWindow = window.open('', '_blank', 'noopener,noreferrer,width=1100,height=900');
+
+        if (!printWindow) {
+            throw new Error('Pop-up blocked. Allow pop-ups to open the print view.');
+        }
+
+        const year = this.currentDate.getFullYear();
+        const month = this.currentDate.getMonth();
+        const monthLabel = this.currentDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+        const rows = [];
+        for (let day = 1; day <= daysInMonth; day++) {
+            const date = new Date(year, month, day);
+            const key = this.formatDateKey(date);
+            const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+            const dayData = this.data[key];
+            let hours = 0;
+            let status = 'Regular';
+            let notes = '';
+
+            if (typeof dayData === 'number') {
+                hours = dayData;
+                status = hours > 0 ? 'Present' : 'Absent';
+            } else if (typeof dayData === 'object' && dayData !== null) {
+                hours = dayData.hours || 0;
+                status = dayData.status === 'holiday' ? 'Holiday' : dayData.status === 'no-schedule' ? 'No Schedule' : (hours > 0 ? 'Present' : 'Absent');
+                notes = dayData.notes || '';
+            } else if (date.getDay() === 0) {
+                status = 'No Schedule';
+            }
+
+            const hoursFormatted = (status === 'Holiday' || status === 'No Schedule') ? '-' : (hours > 0 ? this.formatHours(hours) : '-');
+
+            rows.push(`
+                <tr>
+                    <td>${key}</td>
+                    <td>${dayName}</td>
+                    <td>${hoursFormatted}</td>
+                    <td>${status}</td>
+                    <td>${this.escapeHtml(notes)}</td>
+                </tr>
+            `);
+        }
+
+        const summaryHtml = `
+            <div class="print-summary">
+                <div><strong>Month Total:</strong> ${this.elements.totalHours.textContent}</div>
+                <div><strong>Est. Days Left:</strong> ${this.elements.estimatedDaysLeft.textContent}</div>
+                <div><strong>Avg:</strong> ${this.elements.avgHours.textContent}</div>
+            </div>
+        `;
+
+        const printStyles = `
+            <style>
+                body { font-family: Arial, sans-serif; padding: 24px; color: #1f2d3d; }
+                h1 { margin: 0 0 10px; font-size: 24px; }
+                .print-summary { display: flex; gap: 16px; flex-wrap: wrap; margin: 14px 0 20px; }
+                .print-summary div { background: #eef4fa; padding: 10px 12px; border-radius: 8px; }
+                table { width: 100%; border-collapse: collapse; font-size: 12px; }
+                th, td { border: 1px solid #cfd8e3; padding: 8px 10px; text-align: left; vertical-align: top; }
+                th { background: #eaf1f7; }
+                .actions { margin: 18px 0 24px; }
+                .actions button { padding: 10px 14px; border: 0; border-radius: 6px; margin-right: 8px; cursor: pointer; }
+                .primary { background: #547493; color: white; }
+                .secondary { background: #7f8e97; color: white; }
+                @media print { .actions { display: none; } body { padding: 0; } }
+            </style>
+        `;
+
+        printWindow.document.open();
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>OJT Hours Tracker - Print View</title>
+                ${printStyles}
+            </head>
+            <body>
+                <div class="actions">
+                    <button class="primary" onclick="window.print()">Print / Save as PDF</button>
+                    <button class="secondary" onclick="window.close()">Close</button>
+                </div>
+                <h1>OJT Hours Tracker</h1>
+                <h2>${monthLabel}</h2>
+                ${summaryHtml}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Hours</th>
+                            <th>Status</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows.join('')}
+                    </tbody>
+                </table>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+
+        return printWindow;
+    }
+
+    escapeHtml(value) {
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 
     async clearCurrentMonth() {

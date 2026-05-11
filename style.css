@@ -480,6 +480,30 @@ h1 {
     background: #6d7b83;
 }
 
+.export-modal-content {
+    text-align: left;
+}
+
+.export-help-text {
+    margin: 8px 0 18px;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+}
+
+.export-options {
+    display: grid;
+    gap: 10px;
+}
+
+.btn-print {
+    background: #446682;
+    color: white;
+}
+
+.btn-print:hover {
+    background: #35546d;
+}
+
 @media (max-width: 768px) {
     body {
         padding: 12px;
@@ -575,6 +599,10 @@ h1 {
 
     .modal-actions .btn {
         width: 100%;
+    }
+
+    .export-modal-content {
+        text-align: center;
     }
 }
 
@@ -735,5 +763,9 @@ h1 {
 
     .modal-content {
         padding: 16px;
+    }
+
+    .export-help-text {
+        font-size: 0.88rem;
     }
 }
