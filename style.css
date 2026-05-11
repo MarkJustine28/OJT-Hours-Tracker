@@ -2,6 +2,13 @@
     box-sizing: border-box;
 }
 
+html,
+body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
 :root {
     --bg-start: #edf3f8;
     --bg-end: #d9e6f2;
@@ -32,6 +39,7 @@ body {
 
 .container {
     max-width: 1200px;
+    width: min(100%, 1200px);
     margin: 0 auto;
     background: var(--surface);
     border-radius: 20px;
@@ -567,5 +575,165 @@ h1 {
 
     .modal-actions .btn {
         width: 100%;
+    }
+}
+
+@media (max-width: 640px) {
+    body {
+        padding: 0;
+        background: var(--surface);
+    }
+
+    .container {
+        width: 100%;
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    .page-header,
+    .progress-section,
+    .calendar-header,
+    .calendar-controls,
+    .actions {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    h1 {
+        font-size: 1.6rem;
+        padding: 18px 12px;
+    }
+
+    .progress-label {
+        flex-direction: column;
+        gap: 6px;
+        align-items: flex-start;
+        font-size: 0.98rem;
+    }
+
+    .legend {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .legend-item {
+        font-size: 0.74rem;
+        padding: 5px 10px;
+    }
+
+    .stats span {
+        font-size: 0.86rem;
+        text-align: center;
+    }
+
+    .calendar {
+        gap: 1px;
+        padding: 4px 6px 8px;
+    }
+
+    .calendar-day {
+        min-height: 48px;
+        padding: 2px 1px 7px;
+        border-radius: 8px;
+    }
+
+    .day-number {
+        font-size: 0.82rem;
+        margin-bottom: 1px;
+    }
+
+    .day-hours {
+        font-size: 0.55rem;
+        line-height: 1;
+    }
+
+    .day-note-badge {
+        font-size: 0.45rem;
+        bottom: 3px;
+        padding: 2px 5px;
+        max-width: 92%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .nav-btn,
+    .today-btn {
+        width: 42px;
+        height: 42px;
+        padding: 0;
+        font-size: 1.05rem;
+        flex: 0 0 42px;
+    }
+
+    #monthYear {
+        font-size: 1.35rem;
+        text-align: center;
+        line-height: 1.2;
+    }
+
+    .modal-content {
+        margin: 6% auto;
+        padding: 18px;
+        width: calc(100% - 16px);
+        max-width: none;
+        border-radius: 14px;
+    }
+
+    .modal-content label {
+        margin: 18px 0;
+        text-align: left;
+    }
+
+    #notesInput,
+    #hoursSelect,
+    #minutesSelect,
+    #statusSelect,
+    .settings input {
+        font-size: 16px;
+    }
+
+    .calendar-header {
+        gap: 10px;
+    }
+
+    .calendar-controls {
+        gap: 10px;
+    }
+}
+
+@media (max-width: 420px) {
+    body {
+        padding: 0;
+    }
+
+    h1 {
+        font-size: 1.45rem;
+    }
+
+    .progress-section {
+        padding-top: 16px;
+        padding-bottom: 16px;
+    }
+
+    .calendar-day {
+        min-height: 44px;
+    }
+
+    .day-number {
+        font-size: 0.78rem;
+    }
+
+    .day-hours {
+        font-size: 0.5rem;
+    }
+
+    .legend-item,
+    .stats span {
+        font-size: 0.72rem;
+    }
+
+    .modal-content {
+        padding: 16px;
     }
 }
