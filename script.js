@@ -31,6 +31,7 @@ class CalendarOJTTracker {
             estimatedDaysLeft: document.getElementById('estimatedDaysLeft'),
             avgHours: document.getElementById('avgHours'),
             exportBtn: document.getElementById('exportBtn'),
+            printViewBtn: document.getElementById('printViewBtn'),
             clearMonthBtn: document.getElementById('clearMonthBtn'),
             editModal: document.getElementById('editModal'),
             modalDate: document.getElementById('modalDate'),
@@ -47,7 +48,6 @@ class CalendarOJTTracker {
             exportOptionsModal: document.getElementById('exportOptionsModal'),
             exportCsvBtn: document.getElementById('exportCsvBtn'),
             exportPdfBtn: document.getElementById('exportPdfBtn'),
-            printViewBtn: document.getElementById('printViewBtn'),
             cancelExportBtn: document.getElementById('cancelExportBtn')
         };
 
@@ -91,9 +91,9 @@ class CalendarOJTTracker {
         this.elements.todayBtn.onclick = () => this.goToToday();
 
         this.elements.exportBtn.onclick = () => this.openExportOptions();
+        this.elements.printViewBtn.onclick = () => this.openPrintView();
         this.elements.exportCsvBtn.onclick = () => this.exportCSV();
         this.elements.exportPdfBtn.onclick = () => this.exportPdf();
-        this.elements.printViewBtn.onclick = () => this.openPrintView();
         this.elements.cancelExportBtn.onclick = () => this.closeExportOptions();
         this.elements.clearMonthBtn.onclick = () => this.clearCurrentMonth();
 
@@ -491,28 +491,28 @@ class CalendarOJTTracker {
     async exportPdf() {
         try {
             this.closeExportOptions();
-            const printWindow = this.buildPrintWindow();
-            printWindow.focus();
-            setTimeout(() => {
-                printWindow.print();
-            }, 250);
+            this.launchPrintPreview();
         } catch (error) {
             alert(error.message || 'Failed to prepare PDF export.');
         }
     }
 
     openPrintView() {
-        this.closeExportOptions();
-        const printWindow = this.buildPrintWindow();
-        printWindow.focus();
+        this.launchPrintPreview();
     }
 
-    buildPrintWindow() {
-        const printWindow = window.open('', '_blank', 'noopener,noreferrer,width=1100,height=900');
+    launchPrintPreview() {
+        const printFrame = document.createElement('iframe');
+        printFrame.style.position = 'fixed';
+        printFrame.style.right = '0';
+        printFrame.style.bottom = '0';
+        printFrame.style.width = '0';
+        printFrame.style.height = '0';
+        printFrame.style.border = '0';
+        printFrame.style.visibility = 'hidden';
+        printFrame.setAttribute('aria-hidden', 'true');
 
-        if (!printWindow) {
-            throw new Error('Pop-up blocked. Allow pop-ups to open the print view.');
-        }
+        document.body.appendChild(printFrame);
 
         const year = this.currentDate.getFullYear();
         const month = this.currentDate.getMonth();
@@ -578,8 +578,21 @@ class CalendarOJTTracker {
             </style>
         `;
 
-        printWindow.document.open();
-        printWindow.document.write(`
+        printFrame.addEventListener('load', () => {
+            const frameWindow = printFrame.contentWindow;
+            if (!frameWindow) {
+                printFrame.remove();
+                throw new Error('Unable to open print preview.');
+            }
+
+            const cleanup = () => printFrame.remove();
+            frameWindow.onafterprint = cleanup;
+            frameWindow.focus();
+            frameWindow.print();
+            setTimeout(cleanup, 1000);
+        }, { once: true });
+
+        printFrame.srcdoc = `
             <!DOCTYPE html>
             <html>
             <head>
@@ -610,10 +623,7 @@ class CalendarOJTTracker {
                 </table>
             </body>
             </html>
-        `);
-        printWindow.document.close();
-
-        return printWindow;
+        `;
     }
 
     escapeHtml(value) {

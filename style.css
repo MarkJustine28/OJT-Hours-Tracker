@@ -380,6 +380,10 @@ h1 {
     text-align: center;
 }
 
+.actions .btn {
+    margin-bottom: 10px;
+}
+
 .btn {
     padding: 14px 28px;
     border: none;
@@ -585,6 +589,10 @@ h1 {
     .btn {
         width: 100%;
         margin: 0;
+    }
+
+    .actions .btn {
+        margin-bottom: 0;
     }
 
     .modal-content {
