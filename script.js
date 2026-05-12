@@ -883,8 +883,9 @@ class DashboardApp {
             .map(entry => {
                 const hours = Math.floor(entry.totalMinutes / 60);
                 const minutes = entry.totalMinutes % 60;
-                const statusLabel = entry.status === 'work' ? 'Present' : 
-                                   entry.status === 'holiday' ? 'Holiday' : 'No Schedule';
+                const statusLabel = entry.status === 'holiday' ? 'Holiday' : 
+                                   entry.status === 'no-schedule' ? 'No Schedule' : 
+                                   (hours > 0 ? 'Present' : 'Absent');
                 return `
                     <tr>
                         <td>${entry.date}</td>

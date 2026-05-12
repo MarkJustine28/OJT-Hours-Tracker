@@ -450,20 +450,24 @@ h1 {
     width: 90%;
     max-width: 400px;
     box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-    text-align: center;
 }
 
 .modal-content h3 {
     margin-top: 0;
+    margin-bottom: 25px;
+    text-align: center;
     color: var(--text-primary);
 }
 
 .modal-content label {
     display: block;
-    margin: 25px 0;
+    margin: 20px 0 8px 0;
     font-weight: 600;
+    text-align: left;
+    color: var(--text-primary);
 }
 
+.modal-content select,
 #notesInput {
     width: 100%;
     padding: 12px;
@@ -472,8 +476,18 @@ h1 {
     border-radius: 8px;
     background: #f8f9fa;
     color: var(--text-primary);
+}
+
+#notesInput {
     resize: vertical;
     min-height: 90px;
+}
+
+.modal-content select:focus,
+#notesInput:focus {
+    outline: none;
+    border-color: var(--brand-500);
+    background: white;
 }
 
 .modal-actions {
