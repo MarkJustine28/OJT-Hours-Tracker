@@ -256,6 +256,27 @@ class CalendarOJTTracker {
         return 0;
     }
 
+    getReportStatus(date, dayData, today = new Date()) {
+        let hours = 0;
+        let status = 'Absent';
+        let notes = '';
+
+        if (typeof dayData === 'number') {
+            hours = dayData;
+            status = hours > 0 ? 'Present' : 'Absent';
+        } else if (typeof dayData === 'object' && dayData !== null) {
+            hours = dayData.hours || 0;
+            status = dayData.status === 'holiday' ? 'Holiday' : dayData.status === 'no-schedule' ? 'No Schedule' : (hours > 0 ? 'Present' : 'Absent');
+            notes = dayData.notes || '';
+        } else if (date.getDay() === 0) {
+            status = 'No Schedule';
+        } else if (date > today) {
+            status = 'Not Yet Recorded';
+        }
+
+        return { hours, status, notes };
+    }
+
     hasDayData(date) {
         const key = this.formatDateKey(date);
         const data = this.data[key];
@@ -492,17 +513,97 @@ class CalendarOJTTracker {
     async exportPdf() {
         try {
             this.closeExportOptions();
-            this.launchPrintPreview();
+            await this.downloadPdfExport();
         } catch (error) {
             alert(error.message || 'Failed to prepare PDF export.');
         }
     }
 
-    openPrintView() {
-        this.launchPrintPreview();
+    async openPrintView() {
+        await this.launchPrintPreview();
     }
 
-    launchPrintPreview() {
+    async downloadPdfExport() {
+        const entriesPayload = await this.fetchJson(`${API_BASE}/api/entries`);
+        const exportData = entriesPayload.data || {};
+
+        const jsPDFNamespace = window.jspdf;
+        const JsPDF = jsPDFNamespace && jsPDFNamespace.jsPDF;
+
+        if (!JsPDF) {
+            throw new Error('PDF library failed to load. Please check your internet connection and try again.');
+        }
+
+        const doc = new JsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+        const year = this.currentDate.getFullYear();
+        const month = this.currentDate.getMonth();
+        const monthLabel = this.currentDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const rows = [];
+        const today = new Date();
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            const date = new Date(year, month, day);
+            const key = this.formatDateKey(date);
+            const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+            const dayData = exportData[key];
+            const { hours, status, notes } = this.getReportStatus(date, dayData, today);
+
+            const hoursFormatted = (status === 'Holiday' || status === 'No Schedule') ? '-' : (hours > 0 ? this.formatHours(hours) : '-');
+            rows.push([
+                key,
+                dayName,
+                hoursFormatted,
+                status,
+                notes,
+            ]);
+        }
+
+        doc.setFontSize(18);
+        doc.text('OJT Hours Tracker', 40, 40);
+        doc.setFontSize(13);
+        doc.text(monthLabel, 40, 62);
+
+        const summaryY = 86;
+        doc.setFontSize(10);
+        doc.text(`Month Total: ${this.elements.totalHours.textContent}`, 40, summaryY);
+        doc.text(`Est. Days Left: ${this.elements.estimatedDaysLeft.textContent}`, 220, summaryY);
+        doc.text(`Avg: ${this.elements.avgHours.textContent}`, 380, summaryY);
+
+        doc.autoTable({
+            startY: 108,
+            head: [[ 'Date', 'Day', 'Hours', 'Status', 'Notes' ]],
+            body: rows,
+            styles: {
+                fontSize: 9,
+                cellPadding: 6,
+                overflow: 'linebreak',
+                valign: 'top',
+            },
+            headStyles: {
+                fillColor: [84, 116, 147],
+                textColor: 255,
+            },
+            alternateRowStyles: {
+                fillColor: [245, 248, 252],
+            },
+            columnStyles: {
+                0: { cellWidth: 85 },
+                1: { cellWidth: 55 },
+                2: { cellWidth: 65 },
+                3: { cellWidth: 85 },
+                4: { cellWidth: 'auto' },
+            },
+            margin: { left: 40, right: 40 },
+        });
+
+        doc.save(`OJT-Hours-Tracker-${monthLabel.replace(/\s+/g, '-')}.pdf`);
+    }
+
+    async launchPrintPreview() {
+        const entriesPayload = await this.fetchJson(`${API_BASE}/api/entries`);
+        const exportData = entriesPayload.data || {};
+
         const printFrame = document.createElement('iframe');
         printFrame.style.position = 'fixed';
         printFrame.style.right = '0';
@@ -519,27 +620,15 @@ class CalendarOJTTracker {
         const month = this.currentDate.getMonth();
         const monthLabel = this.currentDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
         const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const today = new Date();
 
         const rows = [];
         for (let day = 1; day <= daysInMonth; day++) {
             const date = new Date(year, month, day);
             const key = this.formatDateKey(date);
             const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
-            const dayData = this.data[key];
-            let hours = 0;
-            let status = 'Regular';
-            let notes = '';
-
-            if (typeof dayData === 'number') {
-                hours = dayData;
-                status = hours > 0 ? 'Present' : 'Absent';
-            } else if (typeof dayData === 'object' && dayData !== null) {
-                hours = dayData.hours || 0;
-                status = dayData.status === 'holiday' ? 'Holiday' : dayData.status === 'no-schedule' ? 'No Schedule' : (hours > 0 ? 'Present' : 'Absent');
-                notes = dayData.notes || '';
-            } else if (date.getDay() === 0) {
-                status = 'No Schedule';
-            }
+            const dayData = exportData[key];
+            const { hours, status, notes } = this.getReportStatus(date, dayData, today);
 
             const hoursFormatted = (status === 'Holiday' || status === 'No Schedule') ? '-' : (hours > 0 ? this.formatHours(hours) : '-');
 
